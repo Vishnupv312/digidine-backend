@@ -1,0 +1,33 @@
+digidine-backend/
+│
+├── config/              # DB config, environment variables
+│   └── db.js
+│
+├── controllers/         # Route handler logic
+│   ├── authController.js
+│   ├── restaurantController.js
+│   ├── menuController.js
+│   └── qrController.js
+│
+├── models/              # Mongoose schemas
+│   ├── Restaurant.js
+│   ├── MenuItem.js
+│   ├── Category.js
+│
+├── routes/              # Express routes
+│   ├── authRoutes.js
+│   ├── restaurantRoutes.js
+│   ├── menuRoutes.js
+│   └── qrRoutes.js
+│
+├── middlewares/         # Custom middlewares (auth, error handling)
+│   └── authMiddleware.js
+│
+├── utils/               # Utility functions (QR code generation, slug creation)
+│   ├── qrGenerator.js
+│   └── slugGenerator.js
+│
+├── .env                 # Environment variables
+├── app.js               # Express app setup
+├── server.js            # Entry point (connect DB, start server)
+├── package.json
