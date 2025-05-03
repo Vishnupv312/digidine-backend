@@ -1,12 +1,16 @@
 const express = require("express");
-const Restaurant = require("../models/restaurant-model");
 const router = express.Router();
-const Restaurant = require("../models/restaurant-model.js");
-const { registration } = require("../controllers/auth-controller");
+const RestaurantModel = require("../models/restaurant-model.js");
+const {
+  registration,
+  login,
+  changePassword,
+} = require("../controllers/auth-controller");
+const { verifyToken } = require("../middlewares/auth-middleware.js");
 router.post("/registration", async (req, res) => {
   try {
     let { email, password } = req.body;
-    let findRestaurant = await Restaurant.findOne({ email });
+    let findRestaurant = await RestaurantModel.findOne({ email });
     if (findRestaurant)
       res.status(301).json({ message: "user already exists" });
     else {
@@ -16,3 +20,24 @@ router.post("/registration", async (req, res) => {
     console.log(err.message);
   }
 });
+
+router.post("/login", async (req, res) => {
+  try {
+    let { email, password } = req.body;
+    let findRestaurant = await RestaurantModel.findOne({ email });
+    if (findRestaurant) {
+      login(req, res, findRestaurant);
+    } else {
+      res.status(301).json({ message: "Email or Password is incorrect" });
+    }
+  } catch (err) {
+    res.status(401).json({
+      message: "something went wrong, please try again ",
+      error: `${err.message}`,
+    });
+  }
+});
+
+router.post("/change-password", verifyToken, changePassword);
+
+module.exports = router;
