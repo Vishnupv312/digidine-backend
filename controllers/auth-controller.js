@@ -87,3 +87,5 @@ module.exports.changePassword = async (req, res) => {
     });
   }
 };
+
+//for logout set cookie in res and then delete it
