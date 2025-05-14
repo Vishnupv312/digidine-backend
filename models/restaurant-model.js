@@ -22,12 +22,12 @@ const restaurantSchma = mongoose.Schema({
     type: String,
     default: "classic",
   },
-  menuItems: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "MenuItem",
-    },
-  ],
+  // menuItems: [
+  //   {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: "MenuItem",
+  //   },
+  // ],
   createdAt: {
     type: Date,
     default: Date.now,

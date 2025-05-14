@@ -9,6 +9,7 @@ const foodItemSchema = mongoose.Schema({
   description: {
     type: String,
   },
+
   price: {
     type: Number,
     required: true,
@@ -40,6 +41,14 @@ const foodItemSchema = mongoose.Schema({
   },
   preparationTime: {
     type: Number, // in minutes
+  },
+  foodItemSlug: {
+    type: String,
+    required: true,
+  },
+  restaurant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "RestaurantModel",
   },
   createdAt: {
     type: Date,

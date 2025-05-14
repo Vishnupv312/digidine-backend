@@ -1,5 +1,9 @@
 const CategoryModel = require("../models/menu-category-model");
-
+const FoodItem = require("../models/food-item-model");
+const slugify = require("slugify");
+const foodItemModel = require("../models/food-item-model");
+const restaurantModel = require("../models/restaurant-model");
+const debug = require("debug")("app:menu-controller");
 module.exports.CreateCategory = async (req, res) => {
   let { name, description, order } = req.body;
 
@@ -88,16 +92,84 @@ module.exports.DeleteCategory = async (req, res) => {
 };
 
 module.exports.AddFoodItem = async (req, res) => {
-  let {
-    name,
-    description,
-    price,
-    category,
-    isVegetarian,
-    isNonVegetarian,
-    ingredients,
-    isSpicy,
-    isAvailable,
-    preparationTime,
-  } = req.body;
+  try {
+    const {
+      name,
+      description,
+      price,
+      category,
+      isVegetarian,
+      isNonVegetarian,
+      ingredients,
+      isSpicy,
+      isAvailable,
+      preparationTime,
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !price || !category) {
+      return res
+        .status(400)
+        .json({ message: "Name, price and category are required." });
+    }
+
+    // Check if restaurant exists
+    const restaurant = await restaurantModel.findById(req.user.id);
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    // Create the food item
+    const newFoodItem = await FoodItem.create({
+      name,
+      description,
+      price,
+      category,
+      isVegetarian,
+      isNonVegetarian,
+      ingredients,
+      isSpicy,
+      isAvailable,
+      preparationTime,
+      foodItemSlug: slugify(name, { lower: true, strict: true }),
+      restaurant: req.user.id,
+      image: req.file?.path || null,
+    });
+
+    res.status(201).json({
+      message: "Food item added successfully",
+      data: newFoodItem,
+    });
+  } catch (error) {
+    console.error("Error adding food item:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+module.exports.ReadFoodItem = async (req, res) => {
+  try {
+    debug("Query:", req.query);
+
+    const foodId = req.query.id;
+
+    if (!foodId) {
+      return res.status(400).json({ message: "Food ID is required" });
+    }
+
+    const findFoodItem = await foodItemModel.findById(foodId);
+
+    if (!findFoodItem) {
+      return res.status(404).json({ message: "Food item not found" });
+    }
+
+    res.status(200).json({ message: "Success", data: findFoodItem });
+  } catch (error) {
+    debug("Error reading food item:", error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
 };
