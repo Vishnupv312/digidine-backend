@@ -7,6 +7,10 @@ const {
   DeleteCategory,
   AddFoodItem,
   ReadFoodItem,
+  UpdateFoodItem,
+  ToggleFoodStatus,
+  DeleteFoodItem,
+  FetchAllFoodItem,
 } = require("../controllers/menu-controler");
 const router = express.Router();
 const multer = require("multer");
@@ -31,4 +35,13 @@ router.delete("/delete-category", verifyToken, DeleteCategory);
 
 router.post("/add-food-item", verifyToken, upload.single("image"), AddFoodItem);
 router.get("/food-item", verifyToken, ReadFoodItem);
+router.put(
+  "/update-food-item",
+  verifyToken,
+  upload.single("image"),
+  UpdateFoodItem
+);
+router.delete("/delete-food-item", verifyToken, DeleteFoodItem);
+router.get("/food-item-status", verifyToken, ToggleFoodStatus);
+router.get("/fetch-food-items", verifyToken, FetchAllFoodItem);
 module.exports = router;

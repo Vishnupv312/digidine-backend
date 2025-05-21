@@ -38,6 +38,7 @@ module.exports.login = async (req, res, findRestaurant) => {
       let jwtToken = generateToken(findRestaurant);
       res
         .status(200)
+        .cookie("token", jwtToken, { httpOnly: true })
         .json({ token: jwtToken, message: "User logged in Succefully" });
     } else {
       res.status(301).json({ message: "Email or Password Incorrect" });
@@ -88,4 +89,21 @@ module.exports.changePassword = async (req, res) => {
   }
 };
 
+module.exports.loginStatus = async (req, res) => {
+  try {
+    let token = req.cookies?.token;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded) {
+      res.status(200).json({ message: "User Verified " });
+    } else {
+      res.status(401).json({ message: "Not authenticated " });
+    }
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ message: "something went wrong", error: err.message });
+  }
+};
 //for logout set cookie in res and then delete it

@@ -1,0 +1,23 @@
+| Situation                         | Status Code | Message      |
+| --------------------------------- | ----------- | ------------ |
+| User successfully registered      | `201`       | Created      |
+| User successfully logged in       | `200`       | OK           |
+| User successfully logged out      | `200`       | OK           |
+| Invalid login credentials         | `401`       | Unauthorized |
+| Authenticated user info (`/me`)   | `200`       | OK           |
+| No token / invalid token on `/me` | `401`       | Unauthorized |
+| Authenticated but not authorized  | `403`       | Forbidden    |
+
+
+
+--CATCH BLOCK ERROR
+
+| Scenario                      | Status Code | Reason                 |
+| ----------------------------- | ----------- | ---------------------- |
+| Database connection fails     | `500`       | Internal Server Error  |
+| Unhandled exceptions          | `500`       | Internal Server Error  |
+| JSON parse fails (bad input)  | `400`       | Bad Request (optional) |
+| Manual validation fails       | `400`       | Bad Request            |
+| Auth token expired or invalid | `401`       | Unauthorized           |
+| Authenticated but not allowed | `403`       | Forbidden              |
+| Not found (thrown manually)   | `404`       | Not Found              |

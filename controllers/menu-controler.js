@@ -173,3 +173,154 @@ module.exports.ReadFoodItem = async (req, res) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+
+module.exports.UpdateFoodItem = async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      price,
+      category,
+      isVegetarian,
+      isNonVegetarian,
+      ingredients,
+      isSpicy,
+      isAvailable,
+      preparationTime,
+    } = req.body;
+    let foodId = req.query.id;
+
+    if (!name || !price || !category) {
+      res
+        .status(503)
+        .json({ message: "name, price and category are required fields " });
+    } else if (!foodId) {
+      res.status(504).json({ message: "food id is required" });
+    }
+
+    let image = req.file?.path; // assuming `file` is the field name
+    const existingFoodItem = await foodItemModel.findOne({
+      _id: foodId,
+      restaurant: req.user.id,
+    });
+
+    if (!existingFoodItem) {
+      return res
+        .status(404)
+        .json({ message: "Food item not found or unauthorized." });
+    }
+
+    //i  might need to add a condition which checks weather the food item is of the same restaurant as the token
+    else {
+      const updatedFoodItem = await foodItemModel.findOneAndUpdate(
+        { _id: foodId, restaurant: req.user.id },
+        {
+          $set: {
+            name,
+            description,
+            price,
+            category,
+            isVegetarian,
+            isNonVegetarian,
+            ingredients,
+            isSpicy,
+            isAvailable,
+            preparationTime,
+            image: image || existingFoodItem.image,
+          },
+        },
+        { new: true }
+      );
+      if (!updatedFoodItem) {
+        res.status(503).json({
+          message:
+            "Either food id is incorrect or else you are not authorized to update this food item",
+        });
+      } else {
+        res.status(200).json({
+          message: `${name} updated sucessfully `,
+          data: updatedFoodItem,
+        });
+      }
+    }
+  } catch (err) {
+    res.status(504).json({
+      message: "something went wrong while updating the food item ",
+      error: err.message,
+    });
+  }
+};
+
+module.exports.DeleteFoodItem = async (req, res) => {
+  let foodId = req.query.id;
+  const findItem = await foodItemModel.findById({
+    _id: foodId,
+    restaurant: req.user.id,
+  });
+  if (!findItem) {
+    res.status(505).json({ message: "Food Item not found " });
+  }
+  let DeletedFoodItem = await foodItemModel.findByIdAndDelete({
+    _id: foodId,
+    restaurant: req.user.id,
+  });
+  if (!DeletedFoodItem) {
+    res
+      .status(501)
+      .json({ message: "Could not delete the food item , Please try agian " });
+  }
+  res
+    .status(200)
+    .json({ message: "Food item deleted Sucessfully", data: DeletedFoodItem });
+};
+
+module.exports.ToggleFoodStatus = async (req, res) => {
+  try {
+    let id = req.query.id;
+    if (!id) {
+      res.status(503).json({ message: "id is required " });
+    }
+    const foodItem = await foodItemModel.findOne({
+      _id: id,
+      restaurant: req.user.id,
+    });
+    if (!foodItem) {
+      res.status(504).json({ message: "food item not found " });
+    }
+    const findFoodItem = await foodItemModel.findOneAndUpdate(
+      { _id: id },
+      { $set: { isAvailable: !foodItem.isAvailable } },
+      { new: true }
+    );
+
+    if (!findFoodItem) {
+      res.status(504).json({ message: "food item not found " });
+    }
+    res
+      .status(200)
+      .json({ message: " status updated successfully", data: findFoodItem });
+  } catch (err) {
+    res.status(505).json({
+      message:
+        "something went wrong while updating the status of the food item ",
+      error: err.message,
+    });
+  }
+};
+
+module.exports.FetchAllFoodItem = async (req, res) => {
+  try {
+    let AllFoodItems = await foodItemModel.find({ restaurant: req.user.id });
+    if (!AllFoodItems) {
+      res.status(507).json({ message: "Could not fetch all the items " });
+    }
+    res
+      .status(200)
+      .json({ message: "Food Items fetched successfully", data: AllFoodItems });
+  } catch (err) {
+    res.status(506).json({
+      message: "Something went wrong while fetching the data",
+      error: err.message,
+    });
+  }
+};

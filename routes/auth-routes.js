@@ -5,6 +5,7 @@ const {
   registration,
   login,
   changePassword,
+  loginStatus,
 } = require("../controllers/auth-controller");
 const { verifyToken } = require("../middlewares/auth-middleware.js");
 router.post("/registration", async (req, res) => {
@@ -28,7 +29,7 @@ router.post("/login", async (req, res) => {
     if (findRestaurant) {
       login(req, res, findRestaurant);
     } else {
-      res.status(301).json({ message: "Email or Password is incorrect" });
+      res.status(401).json({ message: "Email or Password is incorrect" });
     }
   } catch (err) {
     res.status(401).json({
@@ -40,4 +41,5 @@ router.post("/login", async (req, res) => {
 
 router.post("/change-password", verifyToken, changePassword);
 
+router.get("/me", loginStatus);
 module.exports = router;
