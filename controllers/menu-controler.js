@@ -4,6 +4,7 @@ const slugify = require("slugify");
 const foodItemModel = require("../models/food-item-model");
 const restaurantModel = require("../models/restaurant-model");
 const debug = require("debug")("app:menu-controller");
+
 module.exports.CreateCategory = async (req, res) => {
   let { name, description, order } = req.body;
 

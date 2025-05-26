@@ -6,8 +6,10 @@ const {
   login,
   changePassword,
   loginStatus,
+  logout,
 } = require("../controllers/auth-controller");
 const { verifyToken } = require("../middlewares/auth-middleware.js");
+
 router.post("/registration", async (req, res) => {
   try {
     let { email, password } = req.body;
@@ -41,5 +43,7 @@ router.post("/login", async (req, res) => {
 
 router.post("/change-password", verifyToken, changePassword);
 
+router.get("/logout", logout);
 router.get("/me", loginStatus);
+
 module.exports = router;
