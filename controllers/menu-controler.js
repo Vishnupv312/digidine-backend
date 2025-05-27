@@ -32,13 +32,18 @@ module.exports.CreateCategory = async (req, res) => {
 module.exports.ReadCategory = async (req, res) => {
   let findCategory = await CategoryModel.find({ restaurant: req.user.id });
   try {
-    if (findCategory) {
-      res.status(200).json({ data: findCategory });
-    } else {
-      res
-        .status(402)
-        .json({ message: "error in fetching the categories please try again" });
-    }
+    let categoryFoodItems = await Promise.all(
+      //keeping it in the promise so database fetch happens then only response is done
+      findCategory.map(async (category) => {
+        //promise.all so that the map loops in async
+        const foodItemsList = await foodItemModel.find({
+          category: category._id,
+        });
+        let foodItems = foodItemsList.map((item) => item._id);
+        return { ...category._doc, foodItems };
+      })
+    );
+    res.status(200).json({ data: categoryFoodItems });
   } catch (err) {
     res
       .status(501)
