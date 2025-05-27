@@ -11,6 +11,7 @@ const {
   ToggleFoodStatus,
   DeleteFoodItem,
   FetchAllFoodItem,
+  ToggleCategoryStatus,
 } = require("../controllers/menu-controler");
 const router = express.Router();
 const multer = require("multer");
@@ -31,6 +32,7 @@ const upload = multer({ storage: storage });
 router.post("/add-category", verifyToken, CreateCategory);
 router.get("/fetch-categories", verifyToken, ReadCategory);
 router.post("/update-category", verifyToken, UpdateCategory);
+router.put("/update-category-status", verifyToken, ToggleCategoryStatus);
 router.delete("/delete-category", verifyToken, DeleteCategory);
 
 router.post("/add-food-item", verifyToken, upload.single("image"), AddFoodItem);

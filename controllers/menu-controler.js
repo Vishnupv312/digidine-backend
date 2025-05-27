@@ -51,6 +51,47 @@ module.exports.ReadCategory = async (req, res) => {
   }
 };
 
+module.exports.ToggleCategoryStatus = async (req, res) => {
+  let categoryId = req.body.id;
+  try {
+    let categoryById = await CategoryModel.findOne({
+      _id: categoryId,
+      restaurant: req.user.id,
+    });
+    if (!categoryById)
+      return res.status(404).json({ message: "Category not found" });
+    console.log(categoryById);
+    let newStatus = !categoryById.status;
+    console.log(newStatus);
+    let findCategoryId = await CategoryModel.findOneAndUpdate(
+      { _id: categoryId }, // filter
+      { $set: { status: newStatus } }, // update
+      { new: true } // options
+    );
+    console.log(newStatus);
+    let findCategoryFoodItems = await foodItemModel.updateMany(
+      { category: categoryId },
+      {
+        $set: { status: newStatus },
+      }
+    );
+    console.log(findCategoryFoodItems);
+
+    if (
+      findCategoryFoodItems?.matchedCount !== 0 &&
+      findCategoryFoodItems?.modifiedCount !== 0
+    ) {
+      res.status(200).json({ message: "updated successfully" });
+    } else {
+      throw new Error("Food item could not be updated");
+    }
+  } catch (error) {
+    debug(error);
+    console.log(error);
+    res.status(503).json({ message: error.message });
+  }
+};
+
 module.exports.UpdateCategory = async (req, res) => {
   let { id, name, description, order } = req.body;
   try {

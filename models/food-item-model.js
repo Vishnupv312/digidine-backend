@@ -10,6 +10,10 @@ const foodItemSchema = mongoose.Schema({
     type: String,
   },
 
+  status: {
+    type: Boolean,
+    default: true,
+  },
   price: {
     type: Number,
     required: true,
