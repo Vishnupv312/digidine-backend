@@ -17,6 +17,7 @@ const categorySchema = mongoose.Schema({
   order: {
     type: Number,
     default: 0,
+    unique: true,
   },
   status: {
     type: Boolean,

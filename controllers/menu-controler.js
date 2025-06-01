@@ -119,6 +119,20 @@ module.exports.UpdateCategory = async (req, res) => {
 
 module.exports.DeleteCategory = async (req, res) => {
   try {
+    let findCategory = await CategoryModel.findById(req.body.id);
+
+    if (!findCategory) {
+      return res.status(503).json({ message: "Category not found " });
+    }
+    let anyFoodItem = await foodItemModel.find({ category: req.body.id });
+
+    if (anyFoodItem.length !== 0) {
+      const names = anyFoodItem.map((item) => item.name).join(", ");
+      return res.status(502).json({
+        message: `The category contains a food item ${names} so  ${findCategory.name} cant be deactivated`,
+        data: anyFoodItem,
+      });
+    }
     let deleteCategory = await CategoryModel.deleteOne({ _id: req.body.id });
     if (deleteCategory.deletedCount === 1) {
       res.status(200).json({
@@ -135,6 +149,7 @@ module.exports.DeleteCategory = async (req, res) => {
     res
       .status(406)
       .json({ message: "something went wrong", error: err.message });
+    console.log(err);
   }
 };
 
