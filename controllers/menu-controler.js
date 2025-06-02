@@ -3,6 +3,7 @@ const FoodItem = require("../models/food-item-model");
 const slugify = require("slugify");
 const foodItemModel = require("../models/food-item-model");
 const restaurantModel = require("../models/restaurant-model");
+const menuCategoryModel = require("../models/menu-category-model");
 const debug = require("debug")("app:menu-controller");
 
 module.exports.CreateCategory = async (req, res) => {
@@ -372,10 +373,16 @@ module.exports.ToggleFoodStatus = async (req, res) => {
 
 module.exports.FetchAllFoodItem = async (req, res) => {
   try {
-    let AllFoodItems = await foodItemModel.find({ restaurant: req.user.id });
+    let AllFoodItems = await foodItemModel
+      .find({ restaurant: req.user.id })
+      .populate("category");
     if (!AllFoodItems) {
       res.status(507).json({ message: "Could not fetch all the items " });
     }
+
+    AllFoodItems.map(async (item) => {
+      let fetchedCategory = await menuCategoryModel.findById(item.category);
+    });
     res
       .status(200)
       .json({ message: "Food Items fetched successfully", data: AllFoodItems });
