@@ -46,4 +46,6 @@ router.put(
 router.delete("/delete-food-item", verifyToken, DeleteFoodItem);
 router.get("/food-item-status", verifyToken, ToggleFoodStatus);
 router.get("/fetch-food-items", verifyToken, FetchAllFoodItem);
+
+router.get("/public/menu/:slug", verifyToken);
 module.exports = router;

@@ -393,3 +393,9 @@ module.exports.FetchAllFoodItem = async (req, res) => {
     });
   }
 };
+
+module.exports.FetchMenuPublic = async (req, res) => {
+  let restarantSlug = req.params.slug;
+  if (!restarantSlug)
+    return res.status(404).json({ message: "Slug not found " });
+};
