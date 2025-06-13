@@ -3,6 +3,8 @@ const fs = require("fs");
 const { createCanvas, loadImage, registerFont } = require("canvas");
 const QRCode = require("qrcode");
 const RestaurantModel = require("../models/restaurant-model");
+const QRCodeModel = require("../models/qrcode-model");
+const { uploadImage } = require("../config/cloudinary");
 
 module.exports.GenerateQRCode = async (req, res) => {
   try {
@@ -15,13 +17,24 @@ module.exports.GenerateQRCode = async (req, res) => {
       return res.status(404).json({ message: "Restaurant not found" });
     }
 
+    let QrColor = req.body.foregroundColor
+      ? req.body.foregroundColor
+      : "#0000ff";
+    let QrCodeBg = req.body.backgroundColor
+      ? req.body.backgroundColor
+      : "#ffffff";
     const slug = restaurant.slug;
     const restaurantName = restaurant.restaurantName;
     const qrUrl = `${process.env.FRONTEND_URI}menu/${slug}`;
+
     const qrDataUrl = await QRCode.toDataURL(qrUrl, {
       errorCorrectionLevel: "L",
       type: "image/png",
       width: 300,
+      color: {
+        dark: QrColor, // Blue
+        light: QrCodeBg, // White
+      },
     });
 
     let fontPathManrope = path.join(
@@ -71,15 +84,37 @@ module.exports.GenerateQRCode = async (req, res) => {
     const filePath = path.join(qrDir, `${slug}.png`);
     const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync(filePath, buffer);
+    const Image = fs.readFileSync(filePath);
 
-    const relativePath = `/uploads/user/qr-code/${slug}.png`;
+    let cloudinaryUploadResponse = await uploadImage(filePath);
+    console.log("cloudinary upload response ", cloudinaryUploadResponse);
+    const relativePath = `public/uploads/user/qr-code/${slug}.png`;
 
-    return res.status(200).json({
-      message: "Custom QR Code generated",
-      qrCodeUrl: relativePath,
+    const StoreQr = await QRCodeModel.create({
+      restaurant: req.user.id,
+      slugUrl: slug,
+      qrImageUrl: cloudinaryUploadResponse.secure_url,
     });
+
+    if (StoreQr) {
+      res.status(200).json({
+        message: "Custom QR Code generated",
+        data: StoreQr,
+        qrCodeUrl: relativePath,
+      });
+    }
   } catch (err) {
     console.error("QR Code generation failed:", err);
     return res.status(500).json({ message: "QR Code generation failed" });
+  }
+};
+
+module.exports.FetchQrCode = async (req, res) => {
+  try {
+    let findQrCode = await QRCodeModel.findOne({ restaurant: req.user.id });
+    if (!findQrCode) return res.status(503).json({ status: 0 });
+    res.status(200).json({ status: 1, data: findQrCode });
+  } catch (err) {
+    console.log(err);
   }
 };

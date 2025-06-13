@@ -24,12 +24,18 @@ const restaurantSchma = mongoose.Schema({
     type: String,
     default: "classic",
   },
-  // menuItems: [
-  //   {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: "MenuItem",
-  //   },
-  // ],
+  razorpayCustomerId: { type: String },
+  subscription: [
+    {
+      razorpaySubscriptionId: String,
+      planId: String,
+      status: String, // active, pending, cancelled, etc.
+      currentStart: Date,
+      currentEnd: Date,
+      paymentMethod: String,
+    },
+  ],
+
   createdAt: {
     type: Date,
     default: Date.now,

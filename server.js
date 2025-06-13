@@ -5,19 +5,29 @@ const routes = require("./routes");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 var cors = require("cors");
+const { configCloudinary } = require("./config/cloudinary");
 
 dotenv.config();
 
 db();
-
+configCloudinary();
 app.use("/public", express.static("public"));
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"], // Add both variations
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://digidine-frontend.vercel.app",
+    ], // Add both variations
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Access-Control-Allow-Origin",
+    ],
   })
 );
 const PORT = process.env.PORT || 3000;
