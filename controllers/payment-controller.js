@@ -22,6 +22,7 @@ module.exports.CreateSubscription = async (req, res) => {
       total_count: 12,
       quantity: 1,
     });
+
     res.status(200).json(createSubscription);
   } catch (err) {
     res

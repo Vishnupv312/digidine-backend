@@ -54,11 +54,11 @@ module.exports.login = async (req, res, findRestaurant) => {
         .status(200)
         .cookie("token", jwtToken, {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
           maxAge: 24 * 60 * 60 * 1000,
-          sameSite: "lax",
-          // true in production
         })
+
         .json({ token: jwtToken, message: "User logged in Succefully" });
     } else {
       res.status(301).json({ message: "Email or Password Incorrect" });
