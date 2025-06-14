@@ -7,8 +7,21 @@ const paymentSchema = mongoose.Schema({
     ref: restaurantModel,
     require: true,
   },
-  razorpayPaymentId: String,
-  razorpaySubscriptionId: String,
+  razorpayPaymentId: {
+    type: String,
+    require: true,
+    unique: true,
+  },
+  razorpaySubscriptionId: {
+    type: String,
+    require: true,
+    unique: true,
+  },
+  razorpayPlanId: {
+    type: String,
+    require: true,
+    unique: true,
+  },
   amount: Number,
   currency: String,
   status: String,
@@ -16,3 +29,5 @@ const paymentSchema = mongoose.Schema({
   paymentMethod: String,
   createdAt: Date,
 });
+
+module.exports = mongoose.model("PaymentModel", paymentSchema);
