@@ -9,6 +9,7 @@ const {
   logout,
 } = require("../controllers/auth-controller");
 const { verifyToken } = require("../middlewares/auth-middleware.js");
+const passport = require("passport");
 
 router.post("/registration", async (req, res) => {
   try {
@@ -43,6 +44,18 @@ router.post("/login", async (req, res) => {
 
 router.post("/change-password", verifyToken, changePassword);
 
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile"],
+  })
+);
+
+router.get("/google/callback", async (req, res) => {
+  const data = await JSON.req;
+  console.log(data);
+  res.send(req.body);
+});
 router.get("/logout", logout);
 router.get("/me", loginStatus);
 

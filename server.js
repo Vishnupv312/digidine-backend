@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const db = require("./config/db");
@@ -6,8 +7,8 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 var cors = require("cors");
 const { configCloudinary } = require("./config/cloudinary");
-
-dotenv.config();
+const passport = require("passport");
+const PassportSetup = require("./config/passport-setup");
 
 db();
 configCloudinary();
@@ -31,6 +32,8 @@ app.use(
   })
 );
 const PORT = process.env.PORT || 3000;
+
+app.use(passport.initialize());
 
 app.use(express.json());
 app.use(cookieParser());

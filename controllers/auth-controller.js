@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken");
 const RestaurantModel = require("../models/restaurant-model");
 const { generateToken } = require("../utils/generate-token");
 const { generateUniqueSlug } = require("../utils/generate-unique-slug");
-
+const passport = require("passport");
+const GoogleStratergy = require("passport-google-oauth20").Strategy;
 module.exports.registration = async (req, res) => {
   let { email, password, restaurantName, fullName } = req.body;
   try {
@@ -58,7 +59,6 @@ module.exports.login = async (req, res, findRestaurant) => {
           sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
           maxAge: 24 * 60 * 60 * 1000,
         })
-
         .json({ token: jwtToken, message: "User logged in Succefully" });
     } else {
       res.status(301).json({ message: "Email or Password Incorrect" });
@@ -154,4 +154,5 @@ module.exports.logout = async (req, res) => {
       .json({ message: "Something went wrong ", error: err.message });
   }
 };
+
 //for logout set cookie in res and then delete it
