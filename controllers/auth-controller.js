@@ -4,7 +4,9 @@ const RestaurantModel = require("../models/restaurant-model");
 const { generateToken } = require("../utils/generate-token");
 const { generateUniqueSlug } = require("../utils/generate-unique-slug");
 const passport = require("passport");
+const restaurantModel = require("../models/restaurant-model");
 const GoogleStratergy = require("passport-google-oauth20").Strategy;
+
 module.exports.registration = async (req, res) => {
   let { email, password, restaurantName, fullName } = req.body;
   try {
@@ -59,7 +61,11 @@ module.exports.login = async (req, res, findRestaurant) => {
           sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
           maxAge: 24 * 60 * 60 * 1000,
         })
-        .json({ token: jwtToken, message: "User logged in Succefully" });
+        .json({
+          token: jwtToken,
+          message: "User logged in Succefully",
+          userData: findRestaurant,
+        });
     } else {
       res.status(301).json({ message: "Email or Password Incorrect" });
     }
@@ -114,8 +120,12 @@ module.exports.loginStatus = async (req, res) => {
     let token = req.cookies?.token;
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded) {
+    console.log("decoded", decoded);
+    let findUser = await restaurantModel.findById(decoded.id);
+    console.log(findUser);
+    if (findUser) {
       res.status(200).json({
+        userData: findUser,
         success: true,
         authenticated: true,
       });
@@ -155,4 +165,26 @@ module.exports.logout = async (req, res) => {
   }
 };
 
-//for logout set cookie in res and then delete it
+module.exports.GoogleCallBack = async (req, res) => {
+  try {
+    let token = generateToken(req.user);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    {
+      process.env.NODE_ENV == "production"
+        ? res.status(200).redirect(process.env.FRONTEND_URI).json({
+            message: "User successfully logged in ",
+          })
+        : res.status(200).redirect("http://localhost:3000/dashboard").json({
+            message: "User successfully logged in ",
+          });
+    }
+  } catch (err) {
+    console.log(err.messsage);
+  }
+};

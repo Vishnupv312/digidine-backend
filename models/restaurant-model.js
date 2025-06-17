@@ -17,12 +17,20 @@ const restaurantSchma = mongoose.Schema({
   },
   password: { type: String, required: true },
   phone: String,
+  authProvider: {
+    type: String,
+    enum: ["local", "google"],
+    required: true,
+  },
   address: String,
   description: String,
   logoUrl: String,
   theme: {
     type: String,
     default: "classic",
+  },
+  ownerProfileImage: {
+    type: String,
   },
   razorpayCustomerId: { type: String },
   subscription: [
