@@ -7,12 +7,12 @@ const paymentSchema = mongoose.Schema({
     ref: restaurantModel,
     require: true,
   },
-  razorpayPaymentId: {
+  razorpay_payment_id: {
     type: String,
     require: true,
     unique: true,
   },
-  razorpaySubscriptionId: {
+  razorpay_subscription_id: {
     type: String,
     require: true,
     unique: true,

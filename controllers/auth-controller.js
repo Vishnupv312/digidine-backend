@@ -120,9 +120,9 @@ module.exports.loginStatus = async (req, res) => {
     let token = req.cookies?.token;
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("decoded", decoded);
+
     let findUser = await restaurantModel.findById(decoded.id);
-    console.log(findUser);
+
     if (findUser) {
       res.status(200).json({
         userData: findUser,

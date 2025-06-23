@@ -61,22 +61,21 @@ module.exports.ToggleCategoryStatus = async (req, res) => {
     });
     if (!categoryById)
       return res.status(404).json({ message: "Category not found" });
-    console.log(categoryById);
+
     let newStatus = !categoryById.status;
-    console.log(newStatus);
+
     let findCategoryId = await CategoryModel.findOneAndUpdate(
       { _id: categoryId }, // filter
       { $set: { status: newStatus } }, // update
       { new: true } // options
     );
-    console.log(newStatus);
+
     let findCategoryFoodItems = await foodItemModel.updateMany(
       { category: categoryId },
       {
         $set: { status: newStatus },
       }
     );
-    console.log(findCategoryFoodItems);
 
     if (
       findCategoryFoodItems?.matchedCount !== 0 &&

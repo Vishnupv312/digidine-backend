@@ -41,7 +41,7 @@ module.exports.GenerateQRCode = async (req, res) => {
       __dirname,
       "../public/fonts/Oswald/Oswald-VariableFont_wght.ttf"
     );
-    console.log(fontPathManrope);
+
     registerFont(fontPathManrope, { family: "Oswald" });
     // Generate QR Code as a data URL
     // Canvas size: QR + space for text

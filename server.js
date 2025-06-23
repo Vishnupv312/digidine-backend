@@ -31,10 +31,12 @@ app.use(
     ],
   })
 );
+
 const PORT = process.env.PORT || 3000;
 
 app.use(passport.initialize());
 
+app.use("/api/payments/razorpay-webhook", require("./routes/webhooks/payment"));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api", routes);
