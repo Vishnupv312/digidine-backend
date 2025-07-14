@@ -118,24 +118,25 @@ module.exports.changePassword = async (req, res) => {
 module.exports.loginStatus = async (req, res) => {
   try {
     let token = req.cookies?.token;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      let findUser = await restaurantModel.findById(decoded.id);
 
-    let findUser = await restaurantModel.findById(decoded.id);
-
-    if (findUser) {
-      res.status(200).json({
-        userData: findUser,
-        success: true,
-        authenticated: true,
-      });
-    } else {
-      res.status(401).json({
-        success: false,
-        authenticated: false,
-        message: "Unauthorized",
-      });
-    }
+      if (findUser) {
+        res.status(200).json({
+          userData: findUser,
+          success: true,
+          authenticated: true,
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          authenticated: false,
+          message: "Unauthorized",
+        });
+      }
+    } else return res.status(404).send("token not provided ");
   } catch (err) {
     console.log(err.message);
     res
@@ -151,12 +152,12 @@ module.exports.logout = async (req, res) => {
     if (!token) res.status(401).json({ message: "Token not found " });
     res
       .status(200)
+      .json({ message: "Logged out sucessfully" })
       .clearCookie("token", {
         httpOnly: true,
         sameSite: "Lax", // or "Lax" based on your app's needs
         secure: false, // only over HTTPS in production
-      })
-      .json({ message: "Logged out sucessfully" });
+      });
   } catch (err) {
     console.log(err);
     res

@@ -17,16 +17,10 @@ const paymentSchema = mongoose.Schema({
     require: true,
     unique: true,
   },
-  razorpayPlanId: {
-    type: String,
-    require: true,
-    unique: true,
-  },
-  amount: Number,
-  currency: String,
+
   status: String,
   invoiceId: String,
-  paymentMethod: String,
+
   createdAt: Date,
 });
 
