@@ -53,6 +53,7 @@ module.exports.login = async (req, res, findRestaurant) => {
     );
     if (passwordCompare) {
       let jwtToken = generateToken(findRestaurant);
+      let userDataToSend = { ...findRestaurant._doc, password: "" };
       res
         .status(200)
         .cookie("token", jwtToken, {
@@ -64,7 +65,7 @@ module.exports.login = async (req, res, findRestaurant) => {
         .json({
           token: jwtToken,
           message: "User logged in Succefully",
-          userData: findRestaurant,
+          userData: userDataToSend,
         });
     } else {
       res.status(301).json({ message: "Email or Password Incorrect" });
@@ -117,18 +118,34 @@ module.exports.changePassword = async (req, res) => {
 
 module.exports.loginStatus = async (req, res) => {
   try {
+    let payment = req.query.payments;
     let token = req.cookies?.token;
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      let findUser = await restaurantModel.findById(decoded.id);
+      let findUser = await restaurantModel
+        .findById(decoded.id)
+        .select("-password ");
 
       if (findUser) {
-        res.status(200).json({
-          userData: findUser,
-          success: true,
-          authenticated: true,
-        });
+        if (payment) {
+          let findUserWithPayment = await restaurantModel
+            .findById(decoded.id)
+            .select("-password ")
+            .populate("subscriptions");
+
+          res.status(200).json({
+            userData: findUserWithPayment.toObject(),
+            success: true,
+            authenticated: true,
+          });
+        } else {
+          res.status(200).json({
+            userData: findUser,
+            success: true,
+            authenticated: true,
+          });
+        }
       } else {
         res.status(401).json({
           success: false,
@@ -152,12 +169,12 @@ module.exports.logout = async (req, res) => {
     if (!token) res.status(401).json({ message: "Token not found " });
     res
       .status(200)
-      .json({ message: "Logged out sucessfully" })
       .clearCookie("token", {
         httpOnly: true,
         sameSite: "Lax", // or "Lax" based on your app's needs
         secure: false, // only over HTTPS in production
-      });
+      })
+      .json({ message: "Logged out sucessfully" });
   } catch (err) {
     console.log(err);
     res

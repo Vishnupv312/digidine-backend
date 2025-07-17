@@ -1,0 +1,8 @@
+created
+authenticated
+active
+pending
+halted
+cancelled
+completed
+expired

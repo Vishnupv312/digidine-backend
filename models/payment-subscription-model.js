@@ -18,7 +18,7 @@ const paymentSchema = mongoose.Schema({
     unique: true,
   },
 
-  status: String,
+  status: { type: String },
   invoiceId: String,
 
   createdAt: Date,

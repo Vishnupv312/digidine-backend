@@ -32,16 +32,23 @@ const restaurantSchma = mongoose.Schema({
   ownerProfileImage: {
     type: String,
   },
+  billingAddress: {
+    street: String,
+    city: String,
+    state: String,
+    zipCode: Number,
+    country: { type: String, default: "INDIA" },
+  },
   razorpayCustomerId: { type: String },
   subscription: [
-    {
-      razorpaySubscriptionId: String,
-      planId: String,
-      status: String, // active, pending, cancelled, etc.
-      currentStart: Date,
-      currentEnd: Date,
-      paymentMethod: String,
-    },
+    // {
+    //   razorpaySubscriptionId: String,
+    //   planId: String,
+    //   status: String, // active, pending, cancelled, etc.
+    //   currentStart: Date,
+    //   currentEnd: Date,
+    //   paymentMethod: String,
+    // },
   ],
 
   createdAt: {
@@ -50,4 +57,12 @@ const restaurantSchma = mongoose.Schema({
   },
 });
 
+restaurantSchma.virtual("subscriptions", {
+  ref: "PaymentModel",
+  localField: "_id", // matches restaurantId in PaymentModel
+  foreignField: "restaurantId",
+});
+
+restaurantSchma.set("toObject", { virtuals: true });
+restaurantSchma.set("toJSON", { virtuals: true });
 module.exports = mongoose.model("RestaurantModel", restaurantSchma);

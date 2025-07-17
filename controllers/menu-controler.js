@@ -4,6 +4,7 @@ const slugify = require("slugify");
 const foodItemModel = require("../models/food-item-model");
 const restaurantModel = require("../models/restaurant-model");
 const menuCategoryModel = require("../models/menu-category-model");
+const { mongo, default: mongoose } = require("mongoose");
 const debug = require("debug")("app:menu-controller");
 
 module.exports.CreateCategory = async (req, res) => {
@@ -314,13 +315,30 @@ module.exports.UpdateFoodItem = async (req, res) => {
 };
 
 module.exports.DeleteFoodItem = async (req, res) => {
-  let foodId = req.query.id;
-  const findItem = await foodItemModel.findById({
-    _id: foodId,
+  let foodId = req?.query?.foodId;
+
+  console.log(req.query);
+
+  if (!foodId) {
+    return res.status(400).json({
+      message: "Food Item's id is required to perform this function",
+    });
+  }
+
+  let foodIdObject;
+  try {
+    foodIdObject = new mongoose.Types.ObjectId(foodId);
+  } catch (err) {
+    return res.status(400).json({ message: "Invalid Food ID format" });
+  }
+
+  const findItem = await foodItemModel.findOne({
+    _id: foodIdObject,
     restaurant: req.user.id,
   });
+
   if (!findItem) {
-    res.status(505).json({ message: "Food Item not found " });
+    return res.status(404).json({ message: "Food Item not found" });
   }
   let DeletedFoodItem = await foodItemModel.findByIdAndDelete({
     _id: foodId,
