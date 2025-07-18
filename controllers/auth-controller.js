@@ -194,10 +194,13 @@ module.exports.GoogleCallBack = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
     {
-      process.env.NODE_ENV == "production"
-        ? res.status(200).redirect(process.env.FRONTEND_URI).json({
-            message: "User successfully logged in ",
-          })
+      process.env.NODE_ENV === "production"
+        ? res
+            .status(200)
+            .redirect(`${process.env.FRONTEND_URI}dashboard`)
+            .json({
+              message: "User successfully logged in ",
+            })
         : res.status(200).redirect("http://localhost:3000/dashboard").json({
             message: "User successfully logged in ",
           });
