@@ -203,6 +203,33 @@ module.exports.UpgradeSubscription = async (req, res) => {
 };
 
 module.exports.fetchSubscription = async (req, res) => {
-  //fethc susbscription by id
+  //fetch susbscription by id
+  try {
+    let sub_id = req.query.sub_id;
+    if (!sub_id) {
+      return res.status(405).json({ message: "Subscription id is required " });
+    }
+    let subData = await razorpayInstance.subscriptions.fetch(sub_id);
+    if (subData) {
+      let data = {
+        id: subData.id,
+        plan_id: subData.plan_id,
+        customer_id: subData.customer_id,
+        status: subData.status,
+        total_count: subData.total_count,
+        paid_count: subData.paid_count,
+      };
+      res.status(200).json({
+        message: "Fetched the subscription details successfully ",
+        data,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ message: "Something went wrong please try again ", error: err });
+  }
+
   //provide that status data to rontend based on that render the button "upgrade-now or active
 };
