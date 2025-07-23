@@ -40,16 +40,6 @@ const restaurantSchma = mongoose.Schema({
     country: { type: String, default: "INDIA" },
   },
   razorpayCustomerId: { type: String },
-  subscription: [
-    // {
-    //   razorpaySubscriptionId: String,
-    //   planId: String,
-    //   status: String, // active, pending, cancelled, etc.
-    //   currentStart: Date,
-    //   currentEnd: Date,
-    //   paymentMethod: String,
-    // },
-  ],
 
   createdAt: {
     type: Date,
