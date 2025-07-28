@@ -193,19 +193,14 @@ module.exports.GoogleCallBack = async (req, res) => {
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     });
-    {
-      process.env.NODE_ENV === "production"
-        ? res
-            .status(200)
-            .redirect(`${process.env.FRONTEND_URI}dashboard`)
-            .json({
-              message: "User successfully logged in ",
-            })
-        : res.status(200).redirect("http://localhost:3000/dashboard").json({
-            message: "User successfully logged in ",
-          });
+
+    if (process.env.NODE_ENV === "production") {
+      return res.redirect(`${process.env.FRONTEND_URI}dashboard`);
+    } else {
+      return res.redirect("http://localhost:3000/dashboard");
     }
   } catch (err) {
-    console.log(err.messsage);
+    console.log(err.message);
+    res.status(500).json({ error: "Server error" });
   }
 };

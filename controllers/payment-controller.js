@@ -162,69 +162,75 @@ module.exports.HandlePaymentResponse = async (req, res) => {
 };
 
 module.exports.UpgradeSubscription = async (req, res) => {
-  //flow will be 1st cancel current subscription
-  //create new subscription
-
   try {
-    let { plan_id } = req.body;
-    let id = req.user.id;
-    const subscriptionData = await paymentSubscriptionModel.findOne({
+    const { plan_id } = req.body;
+    const id = req.user.id;
+
+    const subscriptionData = await paymentSubscriptionModel.find({
       restaurantId: id,
     });
-    console.log(subscriptionData);
-    if (!subscriptionData) {
+
+    if (!subscriptionData || subscriptionData.length === 0) {
       return res.status(405).json({
-        message:
-          "Could not find any Subscription matching you ID please try again ",
+        message: "No subscriptions found for your account. Please try again.",
       });
     }
 
-    // Check if subscription is not already cancelled
-    if (subscriptionData.status !== "cancelled") {
-      let cancelSubscription = await razorpayInstance.subscriptions.cancel(
-        subscriptionData.razorpay_subscription_id
-      );
+    for (const subscription of subscriptionData) {
+      if (subscription.status !== "cancelled") {
+        if (!subscription.razorpay_subscription_id) {
+          console.error("Missing subscription ID");
+          continue;
+        }
 
-      console.log(cancelSubscription);
+        const cancelSubscription = await razorpayInstance.subscriptions.cancel(
+          subscription.razorpay_subscription_id
+        );
 
-      if (!cancelSubscription) {
-        return res.status(405).json({
-          message:
-            "Could not cancel your current subscription please try again ",
-          error: cancelSubscription,
-        });
+        if (!cancelSubscription) {
+          return res.status(405).json({
+            message:
+              "Could not cancel your current subscription. Please try again.",
+            error: cancelSubscription,
+          });
+        }
+
+        const updatedSubscriptionState =
+          await paymentSubscriptionModel.updateOne(
+            {
+              restaurantId: id,
+              razorpay_subscription_id: subscription.razorpay_subscription_id,
+            },
+            { $set: { status: "cancelled" } }
+          );
+
+        if (!updatedSubscriptionState) {
+          return res.status(406).json({
+            message: "Could not update the subscription status.",
+          });
+        }
       }
-
-      const updatedSubscriptionState = await paymentSubscriptionModel.updateOne(
-        { restaurantId: id },
-        { $set: { status: "cancelled" } }
-      );
-      if (!updatedSubscriptionState)
-        return res
-          .status(406)
-          .json({ message: "couldnt update the subscription status " });
     }
 
     const fiveMinutesLater = Math.floor(Date.now() / 1000) + 5 * 60;
 
     const newSubscription = await razorpayInstance.subscriptions.create({
       plan_id,
-      start_at: fiveMinutesLater, //time seconds me hai 5 min zyada from current
+      start_at: fiveMinutesLater,
       customer_notify: true,
       total_count: 12,
       quantity: 1,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       subscription_id: newSubscription.id,
-      key: process.env.API_KEY_ID, // This is safe to expose
+      key: process.env.API_KEY_ID,
     });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({
-      message: "something went wrong while upgrading your plan",
+    console.error("UpgradeSubscription error:", err);
+    return res.status(500).json({
+      message: "Something went wrong while upgrading your plan.",
       error: err.message,
-      err,
     });
   }
 };
@@ -399,38 +405,7 @@ module.exports.downloadInvoice = async (req, res) => {
 // Add a new function to view invoice
 module.exports.viewInvoice = async (req, res) => {
   try {
-    const { invoice_id } = req.params;
-
-    if (!invoice_id) {
-      return res.status(400).json({ message: "Invoice ID is required" });
-    }
-
-    // Fetch invoice details from Razorpay
-    const invoice = await razorpayInstance.invoices.fetch(invoice_id);
-    if (!invoice) {
-      return res.status(404).json({ message: "Invoice not found" });
-    }
-
-    // Fetch subscription details
-    const subscription = await razorpayInstance.subscriptions.fetch(
-      invoice.subscription_id
-    );
-
-    // Fetch restaurant details
-    const restaurant = await restaurantModel.findById(req.user.id);
-
-    // Generate HTML for invoice view
-    const invoiceData = {
-      id: invoice.id,
-      date: new Date(invoice.date * 1000).toLocaleDateString(),
-      amount: (invoice.amount / 100).toFixed(2),
-      plan: subscription.plan_id,
-      restaurant: {
-        name: restaurant.restaurantName,
-        owner: restaurant.ownerName,
-        address: `${restaurant.billingAddress.street}, ${restaurant.billingAddress.city}, ${restaurant.billingAddress.state} ${restaurant.billingAddress.zipCode}`,
-      },
-    };
+    //fetch the data for the invoice from customer api and subscription api
 
     res.status(200).json({
       message: "Invoice fetched successfully",
