@@ -4,8 +4,9 @@ const crypto = require("crypto");
 const restaurantModel = require("../models/restaurant-model");
 const paymentSubscriptionModel = require("../models/payment-subscription-model");
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
+// const easyInvoice = require("easyinvoice");
 
 function verifySubscriptionSignature(
   subscription_id,
@@ -37,6 +38,7 @@ module.exports.FetchPlans = async (req, res) => {
 module.exports.CreateSubscription = async (req, res) => {
   try {
     let { plan_id } = req.body;
+
     if (plan_id === "")
       return res.status(404).json({ message: "plan id is required " });
 
@@ -50,6 +52,7 @@ module.exports.CreateSubscription = async (req, res) => {
       billingState: userData.billingAddress.state,
       billingZipCode: String(userData.billingAddress.zipCode),
       billingCountry: userData.billingAddress.country || "INDIA",
+      invoiceId: InvoiceId,
     };
 
     const customer = await razorpayInstance.customers.create({
@@ -102,7 +105,10 @@ module.exports.CreateSubscription = async (req, res) => {
 module.exports.HandlePaymentResponse = async (req, res) => {
   const { razorpay_payment_id, razorpay_signature, razorpay_subscription_id } =
     req.body;
-
+  const generateShortId = () => {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  };
+  const InvoiceId = `INV-${generateShortId()}`;
   // Check if any field is missing or empty
   if (
     !razorpay_payment_id?.trim() ||
@@ -142,6 +148,7 @@ module.exports.HandlePaymentResponse = async (req, res) => {
         razorpay_payment_id,
         razorpay_subscription_id,
         status: subscriptionDetails.status,
+        invoiceId: InvoiceId,
         createdAt: new Date(),
       },
       {
@@ -267,132 +274,214 @@ module.exports.fetchSubscription = async (req, res) => {
   //provide that status data to rontend based on that render the button "upgrade-now or active
 };
 
-async function generateInvoicePDF(
-  invoiceData,
-  subscriptionData,
-  restaurantData
-) {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
-      const buffers = [];
-
-      doc.on("data", buffers.push.bind(buffers));
-      doc.on("end", () => {
-        const pdfData = Buffer.concat(buffers);
-        resolve(pdfData);
-      });
-
-      // Invoice Header
-      doc
-        .fillColor("#444444")
-        .fontSize(20)
-        .text("DigiDine", 50, 50)
-        .fontSize(10)
-        .text("123 Restaurant Street", 50, 70)
-        .text("Food City, FC 12345", 50, 85)
-        .text(`Invoice #: ${invoiceData.id}`, 50, 100)
-        .text(
-          `Date: ${new Date(invoiceData.date * 1000).toLocaleDateString()}`,
-          50,
-          115
-        )
-        .moveDown();
-
-      // Customer Information
-      doc
-        .text(`Bill To:`, 300, 70)
-        .text(restaurantData.restaurantName, 300, 85)
-        .text(restaurantData.ownerName, 300, 100)
-        .text(restaurantData.billingAddress.street, 300, 115)
-        .text(
-          `${restaurantData.billingAddress.city}, ${restaurantData.billingAddress.state} ${restaurantData.billingAddress.zipCode}`,
-          300,
-          130
-        )
-        .moveDown();
-
-      // Invoice Title
-      doc.fontSize(16).text("Invoice", 50, 160).moveDown();
-
-      // Invoice Table Header
-      const tableTop = 200;
-      doc
-        .fontSize(10)
-        .text("Description", 50, tableTop)
-        .text("Amount", 350, tableTop, { width: 100, align: "right" });
-
-      // Invoice Items
-      const itemTop = tableTop + 25;
-      doc
-        .fontSize(10)
-        .text(subscriptionData.plan_id, 50, itemTop)
-        .text(`₹${(invoiceData.amount / 100).toFixed(2)}`, 350, itemTop, {
-          width: 100,
-          align: "right",
-        });
-
-      // Total
-      const totalTop = itemTop + 30;
-      doc
-        .fontSize(12)
-        .text("Total", 300, totalTop)
-        .text(`₹${(invoiceData.amount / 100).toFixed(2)}`, 350, totalTop, {
-          width: 100,
-          align: "right",
-        });
-
-      // Footer
-      doc
-        .fontSize(8)
-        .text("Thank you for your business!", 50, 700, { align: "center" });
-
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
 // Update the downloadInvoice function
 module.exports.downloadInvoice = async (req, res) => {
   try {
-    const { invoice_id } = req.params;
+    let subscription_id = req.query.sub_id;
+    if (!subscription_id)
+      return res.status(406).json({
+        message: "Subscription id is required to generate the Invoice",
+      });
 
-    if (!invoice_id) {
-      return res.status(400).json({ message: "Invoice ID is required" });
-    }
-
-    // Fetch invoice details from Razorpay
-    const invoice = await razorpayInstance.invoices.fetch(invoice_id);
-    if (!invoice) {
-      return res.status(404).json({ message: "Invoice not found" });
-    }
-
-    // Fetch subscription details
-    const subscription = await razorpayInstance.subscriptions.fetch(
-      invoice.subscription_id
+    let subscriptionData = await razorpayInstance.subscriptions.fetch(
+      subscription_id
     );
+    let userData = await restaurantModel.findById(req.user.id);
+    let paymentData = await paymentSubscriptionModel.findOne({
+      razorpay_subscription_id: subscription_id,
+    });
 
-    // Fetch restaurant details
-    const restaurant = await restaurantModel.findById(req.user.id);
+    // Fetch plan details to get pricing and plan name
+    let planData = await razorpayInstance.plans.fetch(subscriptionData.plan_id);
 
-    // Generate PDF
-    const pdfBuffer = await generateInvoicePDF(
-      invoice,
-      subscription,
-      restaurant
-    );
+    const today = new Date();
+    const formattedDate = today.toISOString().split("T")[0];
 
-    // Set response headers for PDF download
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=invoice_${invoice.id}.pdf`
-    );
+    // Convert timestamps to readable dates
+    const startDate = new Date(subscriptionData.start_at * 1000)
+      .toISOString()
+      .split("T")[0];
+    const endDate = new Date(subscriptionData.end_at * 1000)
+      .toISOString()
+      .split("T")[0];
 
-    // Send the PDF
-    res.send(pdfBuffer);
+    // Get plan details from the correct structure
+    const planName = planData.item.name;
+    const planAmount = planData.item.amount / 100;
+    const planPeriod = `${planData.interval} ${planData.period}`;
+    const taxRate = 18;
+
+    // Calculate totals
+    const subtotal = planAmount * subscriptionData.quantity;
+    const taxAmount = (subtotal * taxRate) / 100;
+    const totalAmount = subtotal + taxAmount;
+
+    // Generate PDF using PDFKit
+    const doc = new PDFDocument({ margin: 50 });
+    const buffers = [];
+
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => {
+      const pdfData = Buffer.concat(buffers);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=invoice-${
+          paymentData?.invoiceId || "default"
+        }.pdf`
+      );
+      res.send(pdfData);
+    });
+
+    // Header - Invoice Title
+    doc.fontSize(24).fillColor("#2c3e50").text("INVOICE", 50, 50);
+
+    // Invoice Details (Top Right)
+    doc
+      .fontSize(12)
+      .fillColor("#000")
+      .text(`Invoice Number: ${paymentData?.invoiceId || "N/A"}`, 350, 50)
+      .text(`Date: ${formattedDate}`, 350, 70)
+      .text(`Due Date: ${endDate}`, 350, 90);
+
+    // Company Logo area (if needed)
+    // doc.image('logo.png', 50, 80, { width: 100 });
+
+    // From Section
+    doc.fontSize(14).fillColor("#2c3e50").text("From:", 50, 150);
+
+    doc
+      .fontSize(11)
+      .fillColor("#000")
+      .text("Digidine", 50, 170)
+      .text("Sample Address", 50, 185)
+      .text("Ahmedabad, Gujarat - 380051", 50, 200)
+      .text("India", 50, 215);
+
+    // Bill To Section
+    doc.fontSize(14).fillColor("#2c3e50").text("Bill To:", 300, 150);
+
+    doc
+      .fontSize(11)
+      .fillColor("#000")
+      .text(userData?.restaurantName || "Restaurant Name", 300, 170)
+      .text(
+        userData?.billingAddress?.street || "Street not available",
+        300,
+        185
+      )
+      .text(userData?.billingAddress?.city || "City", 300, 200)
+      .text(userData?.billingAddress?.country || "Country", 300, 215);
+
+    // Line separator
+    doc.moveTo(50, 250).lineTo(550, 250).strokeColor("#ddd").stroke();
+
+    // Table Header
+    // Use more padding and fix overlaps
+    const tableTop = 280;
+    doc
+      .fontSize(12)
+      .fillColor("#2c3e50")
+      .text("Description", 50, tableTop)
+      .text("Qty", 300, tableTop)
+      .text("Price (Rs)", 340, tableTop)
+      .text("Tax Rate", 400, tableTop)
+      .text("Amount (Rs)", 470, tableTop);
+
+    // Table header underline
+    doc
+      .moveTo(50, tableTop + 15)
+      .lineTo(550, tableTop + 15)
+      .strokeColor("#ddd")
+      .stroke();
+
+    // Product Row
+    const productY = tableTop + 30;
+    doc
+      .fontSize(10)
+      .fillColor("#000")
+      .text(`${planName} Plan - ${planPeriod}`, 50, productY, { width: 240 })
+      .text(subscriptionData.quantity.toString(), 300, productY)
+      .text(planAmount.toFixed(2), 340, productY)
+      .text(`${taxRate}%`, 400, productY)
+      .text(totalAmount.toFixed(2), 470, productY);
+
+    // Totals Section
+    const totalsY = productY + 50;
+
+    // Subtotal
+    doc
+      .fontSize(11)
+      .text("Subtotal:", 400, totalsY)
+      .text(`Rs ${subtotal.toFixed(2)}`, 480, totalsY);
+
+    // Tax
+    doc.text(`GST (${taxRate}%):`, 400, totalsY + 20);
+    doc.text(`Rs ${taxAmount.toFixed(2)}`, 480, totalsY + 20);
+
+    // Total line
+    doc
+      .moveTo(400, totalsY + 35)
+      .lineTo(550, totalsY + 35)
+      .strokeColor("#000")
+      .stroke();
+
+    // Total Amount
+    doc
+      .fontSize(12)
+      .fillColor("#2c3e50")
+      .text("Total Amount:", 400, totalsY + 45)
+      .text(`Rs ${totalAmount.toFixed(2)}`, 480, totalsY + 45);
+
+    // Subscription Details Section
+    const subscriptionDetailsY = totalsY + 100;
+    doc
+      .fontSize(12)
+      .fillColor("#2c3e50")
+      .text("Subscription Details:", 50, subscriptionDetailsY);
+
+    doc
+      .fontSize(10)
+      .fillColor("#000")
+      .text(
+        `Subscription ID: ${subscriptionData.id}`,
+        50,
+        subscriptionDetailsY + 20
+      )
+      .text(`Plan: ${planName}`, 50, subscriptionDetailsY + 35)
+      .text(
+        `Billing Period: ${startDate} to ${endDate}`,
+        50,
+        subscriptionDetailsY + 50
+      )
+      .text(
+        `Payment Method: ${
+          subscriptionData.payment_method?.toUpperCase() || "N/A"
+        }`,
+        50,
+        subscriptionDetailsY + 65
+      )
+      .text(
+        `Payments: ${subscriptionData.paid_count}/${subscriptionData.total_count} completed (${subscriptionData.remaining_count} remaining)`,
+        50,
+        subscriptionDetailsY + 80
+      );
+
+    // Footer
+    const footerY = subscriptionDetailsY + 120;
+    doc
+      .fontSize(8)
+      .fillColor("#666")
+      .text("Thank you for your business!", 50, footerY)
+      .text(
+        "For any queries, please contact our support team.",
+        50,
+        footerY + 15
+      );
+
+    // Finalize the PDF
+    doc.end();
   } catch (err) {
     console.error("Error generating invoice:", err);
     res.status(500).json({
@@ -402,20 +491,109 @@ module.exports.downloadInvoice = async (req, res) => {
   }
 };
 
-// Add a new function to view invoice
 module.exports.viewInvoice = async (req, res) => {
   try {
-    //fetch the data for the invoice from customer api and subscription api
+    let subscription_id = req.query.sub_id;
+    if (!subscription_id)
+      return res.status(406).json({
+        message: "Subscription id is required to view the Invoice",
+      });
+
+    let subscriptionData = await razorpayInstance.subscriptions.fetch(
+      subscription_id
+    );
+    let userData = await restaurantModel.findById(req.user.id);
+    let paymentData = await paymentSubscriptionModel.findOne({
+      razorpay_subscription_id: subscription_id,
+    });
+
+    // Fetch plan details to get pricing and plan name
+    let planData = await razorpayInstance.plans.fetch(subscriptionData.plan_id);
+
+    const today = new Date();
+    const formattedDate = today.toISOString().split("T")[0];
+
+    // Convert timestamps to readable dates
+    const startDate = new Date(subscriptionData.start_at * 1000)
+      .toISOString()
+      .split("T")[0];
+    const endDate = new Date(subscriptionData.end_at * 1000)
+      .toISOString()
+      .split("T")[0];
+
+    // Get plan details from the correct structure
+    const planName = planData.item.name;
+    const planAmount = planData.item.amount / 100;
+    const planPeriod = `${planData.interval} ${planData.period}`;
+    const taxRate = 18;
+
+    // Calculate totals
+    const subtotal = planAmount * subscriptionData.quantity;
+    const taxAmount = (subtotal * taxRate) / 100;
+    const totalAmount = subtotal + taxAmount;
+
+    // Prepare invoice data for frontend
+    const invoiceData = {
+      id: paymentData?.invoiceId || "N/A",
+      date: formattedDate,
+      dueDate: endDate,
+
+      // Company details
+      company: {
+        name: "Digidine",
+        address: "Sample Address",
+        city: "Ahmedabad",
+        state: "Gujarat",
+        zipCode: "380051",
+        country: "India",
+      },
+
+      // Client details
+      client: {
+        company: userData?.restaurantName || "Restaurant Name",
+        address: userData?.billingAddress?.street || "Address not available",
+        city: userData?.billingAddress?.city || "City",
+        state: userData?.billingAddress?.state || "State",
+        country: userData?.billingAddress?.country || "Country",
+        zipCode: userData?.billingAddress?.zipCode || "N/A",
+      },
+
+      // Plan details
+      plan: {
+        name: planName,
+        description: `${planName} Plan - ${planPeriod}`,
+        quantity: subscriptionData.quantity,
+        unitPrice: planAmount,
+        subtotal: subtotal,
+        taxRate: taxRate,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+      },
+
+      // Subscription details
+      subscription: {
+        id: subscriptionData.id,
+        status: subscriptionData.status,
+        startDate: startDate,
+        endDate: endDate,
+        paymentMethod: subscriptionData.payment_method?.toUpperCase() || "N/A",
+        paidCount: subscriptionData.paid_count,
+        totalCount: subscriptionData.total_count,
+        remainingCount: subscriptionData.remaining_count,
+      },
+    };
 
     res.status(200).json({
-      message: "Invoice fetched successfully",
+      success: true,
+      message: "Invoice data retrieved successfully",
       invoice: invoiceData,
     });
   } catch (err) {
-    console.error("Error fetching invoice:", err);
+    console.error("Error viewing invoice:", err);
     res.status(500).json({
-      message: "Failed to fetch invoice",
+      message: "Failed to retrieve invoice data",
       error: err.message,
     });
   }
 };
+// Add a new function to view invoice

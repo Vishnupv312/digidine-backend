@@ -16,8 +16,9 @@ router.post("/create-subscription", verifyToken, CreateSubscription);
 router.post("/payment-response", verifyToken, HandlePaymentResponse);
 router.post("/upgrade-plan", verifyToken, UpgradeSubscription);
 router.get("/fetch-subscription-details", verifyToken, fetchSubscription);
-router.get("/invoice/view/:invoice_id", verifyToken, viewInvoice);
+// router.get("/invoice/view/:invoice_id", verifyToken, viewInvoice);
 
-router.get("/invoice/:invoice_id", verifyToken, downloadInvoice);
+router.get("/invoice", verifyToken, downloadInvoice);
+router.get("/view-invoice", verifyToken, viewInvoice);
 
 module.exports = router;
