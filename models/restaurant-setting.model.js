@@ -7,6 +7,13 @@ const restaurantOwnerSetting = mongoose.Schema({
     ref: restaurantModel,
     required: true,
   },
+  restaurantName: { type: String },
+  restaurantLogo: {
+    type: String,
+  },
+  theme: {
+    type: String,
+  },
   restaurantBannerImage: { type: String },
   restaurantAddress: {
     type: String,
@@ -17,9 +24,28 @@ const restaurantOwnerSetting = mongoose.Schema({
   description: {
     type: String,
   },
-  openingHours: {
-    type: Array,
+  address: {
+    type: String,
   },
+
+  openingHours: [
+    {
+      day: {
+        type: String,
+        required: true,
+      },
+      open: {
+        type: String, // e.g., "09:00"
+        required: true,
+      },
+      close: {
+        type: String, // e.g., "21:00"
+        required: true,
+      },
+    },
+  ],
 });
+
+restaurantOwnerSetting.index({ restaurantId: 1 });
 
 module.exports = mongoose.model("restaurantOwnerModel", restaurantOwnerSetting);

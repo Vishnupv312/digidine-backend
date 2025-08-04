@@ -54,6 +54,11 @@ const qrCodeSchema = new mongoose.Schema(
       default: null, // Will be updated on each scan
     },
   },
+
+  //config for the object
+  //timestamps: -> maanages created and updated field
+  //toJSOn and
+  //toObject helps to let the virtual be passed when fetched as json or object or else it wont be available when fetched
   {
     timestamps: true, // Adds createdAt and updatedAt automatically
     toJSON: { virtuals: true },
