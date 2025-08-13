@@ -6,7 +6,7 @@ const { generateUniqueSlug } = require("../utils/generate-unique-slug");
 const passport = require("passport");
 const restaurantModel = require("../models/restaurant-model");
 const GoogleStratergy = require("passport-google-oauth20").Strategy;
-
+const RestaurantOwnerModel = require("../models/restaurant-setting.model");
 module.exports.registration = async (req, res) => {
   let { email, password, restaurantName, fullName } = req.body;
   try {
@@ -15,13 +15,24 @@ module.exports.registration = async (req, res) => {
     if (salt) {
       let hashPassword = await bcrypt.hash(password, salt);
       let uniqueSlug = await generateUniqueSlug(restaurantName);
+
+      // Create main restaurant record
       const createdRestaurant = await RestaurantModel.create({
         restaurantName,
         email,
         ownerName: fullName,
         password: hashPassword,
         slug: uniqueSlug,
+        authProvider: "local",
       });
+
+      // Create initial owner settings
+      await RestaurantOwnerModel.create({
+        restaurantId: createdRestaurant._id,
+        restaurantName: createdRestaurant.restaurantName,
+        theme: "classic", // Default theme
+      });
+
       let token = generateToken(createdRestaurant);
       res
         .status(200)
@@ -33,7 +44,7 @@ module.exports.registration = async (req, res) => {
         })
         .json({
           token: token,
-          message: "user created succesfully",
+          message: "User created successfully",
         });
     }
   } catch (err) {

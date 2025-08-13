@@ -36,7 +36,7 @@ const restaurantSchma = mongoose.Schema({
     street: String,
     city: String,
     state: String,
-    zipCode: Number,
+    zipCode: String,
     country: { type: String, default: "INDIA" },
   },
   razorpayCustomerId: { type: String },

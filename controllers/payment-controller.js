@@ -52,7 +52,6 @@ module.exports.CreateSubscription = async (req, res) => {
       billingState: userData.billingAddress.state,
       billingZipCode: String(userData.billingAddress.zipCode),
       billingCountry: userData.billingAddress.country || "INDIA",
-      invoiceId: InvoiceId,
     };
 
     const customer = await razorpayInstance.customers.create({
